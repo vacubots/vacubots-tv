@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024"><title>VacuBots</title><rect width="1024" height="1024" fill="#050506"/><rect x="0.0" y="0" width="147.28571428571428" height="225.28" fill="#505055"/><rect x="0.0" y="798.72" width="147.28571428571428" height="225.28" fill="#505055"/><rect x="146.28571428571428" y="0" width="147.28571428571428" height="225.28" fill="#606000"/><rect x="146.28571428571428" y="798.72" width="147.28571428571428" height="225.28" fill="#606000"/><rect x="292.57142857142856" y="0" width="147.28571428571428" height="225.28" fill="#006262"/><rect x="292.57142857142856" y="798.72" width="147.28571428571428" height="225.28" fill="#006262"/><rect x="438.85714285714283" y="0" width="147.28571428571428" height="225.28" fill="#00620B"/><rect x="438.85714285714283" y="798.72" width="147.28571428571428" height="225.28" fill="#00620B"/><rect x="585.1428571428571" y="0" width="147.28571428571428" height="225.28" fill="#650062"/><rect x="585.1428571428571" y="798.72" width="147.28571428571428" height="225.28" fill="#650062"/><rect x="731.4285714285714" y="0" width="147.28571428571428" height="225.28" fill="#690900"/><rect x="731.4285714285714" y="798.72" width="147.28571428571428" height="225.28" fill="#690900"/><rect x="877.7142857142857" y="0" width="147.28571428571428" height="225.28" fill="#10116C"/><rect x="877.7142857142857" y="798.72" width="147.28571428571428" height="225.28" fill="#10116C"/><rect x="501.76" y="56.32" width="409.6" height="25.6" fill="#00DCDC"/><rect x="174.08" y="117.76" width="296.96" height="25.6" fill="#D700D7"/><rect x="675.84" y="167.936" width="296.96" height="20.48" fill="#E4DF00"/><rect x="61.44" y="859.136" width="368.64" height="23.552" fill="#0069EF"/><rect x="450.56" y="911.36" width="409.6" height="24.576" fill="#E000B5"/><rect x="788.48" y="972.8" width="235.52" height="22.528" fill="#00D9CA"/><svg x="202" y="252" width="620" height="519.13" viewBox="0 0 504 422">
+  <title id="t">VacuBots logo – robot vacuum</title>
+  <defs>
+    <style>
+      .navy { stroke:#06365C; stroke-linecap:round; stroke-linejoin:round; fill:none }
+    </style>
+  </defs>
+
+  <!-- Side wall (gray) -->
+  <path fill="#92A9B9"
+        d="M31.5 137.5 A221.5 127.5 0 0 0 474.5 137.5 L474.5 222 A221.5 127.5 0 0 1 31.5 222 Z"/>
+
+  <!-- Body outline: sides + bottom arc -->
+  <path class="navy" stroke-width="17"
+        d="M31.5 137.5 L31.5 222 A221.5 127.5 0 0 0 474.5 222 L474.5 137.5"/>
+
+  <!-- Top face rim -->
+  <ellipse class="navy" style="fill:#FFFFFF" stroke-width="17" cx="253" cy="137.5" rx="221.5" ry="127.5"/>
+
+  <!-- Inner ring -->
+  <ellipse class="navy" stroke-width="13.5" cx="252.5" cy="134" rx="165.75" ry="89.25"/>
+
+  <!-- Sensor / button (center) -->
+  <ellipse fill="#92A9B9" stroke="#06365C" stroke-width="17.5" cx="253" cy="103.5" rx="47.5" ry="23.5"/>
+
+  <!-- Sensor / button (lower left) -->
+  <ellipse fill="#86A0B3" stroke="#06365C" stroke-width="15" cx="201" cy="198" rx="41" ry="15.5"/>
+
+  <!-- Motion lines -->
+  <path class="navy" style="stroke:#FFFFFF" stroke-width="9" d="M19 329 Q102 409 236 402"/>
+  <path class="navy" style="stroke:#FFFFFF" stroke-width="9" d="M62 327 Q118 356 190 375"/>
+</svg></svg>

@@ -1,0 +1,145 @@
+name: Build and publish VacuBots TV
+
+# Builds the Google TV app (androidtv/) and publishes it, its update files, and the wallpaper videos and sounds (pages/)
+# to GitHub Pages at https://vacubots.github.io/vacubots-tv/. The app on the TV reads its updates and downloads from there.
+# Run it by hand (Actions > this workflow > Run workflow), or it runs when the app or pages/ change on main.
+# The APK is also attached to the run as "VacuBotsTV-apk" (Summary page, Artifacts).
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "androidtv/**"
+      - "pages/**"
+      - ".github/workflows/build.yml"
+
+permissions:
+  contents: read
+  pages: write       # publishes the site
+  id-token: write    # lets GitHub Pages confirm this run is allowed to publish
+
+concurrency:
+  group: vacubots-tv-publish
+  cancel-in-progress: false
+
+env:
+  SITE: https://vacubots.github.io/vacubots-tv
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    outputs:
+      publish: ${{ steps.gate.outputs.publish }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.11.1"
+
+      - name: Accept Android SDK licences
+        run: yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null || true
+
+      # The private signing key lives in repository secrets (VB_KEYSTORE_B64, VB_KEYSTORE_PASSWORD, VB_KEY_ALIAS, VB_KEY_PASSWORD;
+      # made with androidtv/make-signing-key.command). With no key, or a key that does not open, the build STOPS: an APK signed with
+      # any other key could never be installed over the TVs' current app.
+      - name: Build the APK
+        working-directory: androidtv
+        env:
+          VB_KEYSTORE_B64: ${{ secrets.VB_KEYSTORE_B64 }}
+          VB_KEYSTORE_PASSWORD: ${{ secrets.VB_KEYSTORE_PASSWORD }}
+          VB_KEY_ALIAS: ${{ secrets.VB_KEY_ALIAS }}
+          VB_KEY_PASSWORD: ${{ secrets.VB_KEY_PASSWORD }}
+        run: |
+          if [ -z "$VB_KEYSTORE_B64" ]; then
+            echo "::error::The signing secrets are not set. Run androidtv/make-signing-key.command and save the four secrets, then run this again."
+            exit 1
+          fi
+          echo "$VB_KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/release.keystore"
+          if ! keytool -list -keystore "$RUNNER_TEMP/release.keystore" -storepass "$VB_KEYSTORE_PASSWORD" -alias "$VB_KEY_ALIAS" > /dev/null 2>&1; then
+            echo "::error::The signing secrets do not open the key (wrong password or alias). Nothing was built."
+            exit 1
+          fi
+          export VB_KEYSTORE_FILE="$RUNNER_TEMP/release.keystore"
+          gradle --no-daemon assembleDebug
+
+      - name: Name the file
+        run: |
+          mkdir -p out
+          cp androidtv/app/build/outputs/apk/debug/app-debug.apk out/VacuBotsTV.apk
+          ls -l out
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: VacuBotsTV-apk
+          path: out/VacuBotsTV.apk
+          if-no-files-found: error
+          retention-days: 90
+
+      # Never go backwards: if the site already offers a higher version than this build, this build is not published.
+      - name: Check this build is not older than the published one
+        id: gate
+        run: |
+          CODE=$(grep -oP 'versionCode = \K[0-9]+' androidtv/app/build.gradle.kts)
+          LIVE=$(curl -fsS "$SITE/apk/version.json" 2>/dev/null | python3 -c "import json,sys;print(json.load(sys.stdin)['code'])" 2>/dev/null || echo 0)
+          echo "This build: $CODE. Published: $LIVE."
+          if [ "$CODE" -lt "$LIVE" ]; then echo "publish=no" >> "$GITHUB_OUTPUT"; echo "::warning::This build is older than the published one, so it is not published."; else echo "publish=yes" >> "$GITHUB_OUTPUT"; fi
+
+      # Put together the site: the wallpaper videos and sounds, and the APK with the update notes the app reads.
+      # The app looks for v<next code>.json first (it names a versioned APK file that is new every release), then version.json,
+      # because GitHub Pages can keep serving an old copy of a fixed address for a few minutes.
+      - name: Put the site together
+        if: github.ref == 'refs/heads/main' && steps.gate.outputs.publish == 'yes'
+        run: |
+          CODE=$(grep -oP 'versionCode = \K[0-9]+' androidtv/app/build.gradle.kts)
+          VER=$(grep -oP 'versionName = "\K[^"]+' androidtv/app/build.gradle.kts)
+          mkdir -p site/apk
+          cp -R pages/. site/
+          cp out/VacuBotsTV.apk site/apk/VacuBotsTV.apk
+          cp out/VacuBotsTV.apk "site/apk/VacuBotsTV-${VER}.apk"
+          printf '{"code": %s, "name": "%s", "file": "VacuBotsTV.apk"}\n' "$CODE" "$VER" > site/apk/version.json
+          printf '{"code": %s, "name": "%s", "file": "VacuBotsTV-%s.apk"}\n' "$CODE" "$VER" "$VER" > "site/apk/v${CODE}.json"
+          find site -type f | sort | head -40
+          du -sh site
+
+      - uses: actions/configure-pages@v5
+        if: github.ref == 'refs/heads/main' && steps.gate.outputs.publish == 'yes'
+
+      - uses: actions/upload-pages-artifact@v3
+        if: github.ref == 'refs/heads/main' && steps.gate.outputs.publish == 'yes'
+        with:
+          path: site
+
+      # Posts the finished APK to the Discord channel behind the DISCORD_TESTING_WEBHOOK_URL secret (#testing).
+      # Skipped, without failing, when that secret is not set.
+      - name: Send the APK to Discord
+        env:
+          HOOK: ${{ secrets.DISCORD_TESTING_WEBHOOK_URL }}
+        run: |
+          if [ -z "$HOOK" ]; then echo "No DISCORD_TESTING_WEBHOOK_URL secret; not posting."; exit 0; fi
+          VER=$(grep -oP 'versionName = "\K[^"]+' androidtv/app/build.gradle.kts)
+          BUILD=$(grep -oP 'versionCode = \K[0-9]+' androidtv/app/build.gradle.kts)
+          code=$(curl -sS -o /dev/null -w "%{http_code}" \
+            -F "username=VacuBots TV build" \
+            -F "content=VacuBots TV ${VER} for Google TV is ready (build ${BUILD}, commit ${GITHUB_SHA::7}). Download the file, then install it on the Streamer." \
+            -F "file=@out/VacuBotsTV.apk;filename=VacuBotsTV-${VER}.apk" "$HOOK")
+          echo "Discord answered $code"
+          case "$code" in 2*) ;; *) echo "::warning::Discord did not accept the post ($code)";; esac
+
+  deploy:
+    needs: build
+    if: github.ref == 'refs/heads/main' && needs.build.outputs.publish == 'yes'
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

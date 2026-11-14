@@ -1,0 +1,14 @@
+{
+  "meadow": {
+    "file": "meadow.mp4",
+    "file1080": "meadow-1080.mp4",
+    "v": 2,
+    "v1080": 3
+  },
+  "pinksnow": {
+    "file": "pinksnow.mp4",
+    "file1080": "pinksnow-1080.mp4",
+    "v": 2,
+    "v1080": 3
+  }
+}
