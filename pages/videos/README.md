@@ -5,7 +5,7 @@ The VacuBots TV app downloads these from https://vacubots.github.io/vacubots-tv/
 
 Add or swap one without an app release:
 
-    python tools/make_video.py clip.mp4 meadow     # (the script is still in the website repository, and still writes into its theme folder: copy the result here) copies/converts to pages/videos/meadow.mp4 and bumps manifest.json
+    python tools/make_video.py clip.mp4 meadow     # copies/converts to pages/videos/meadow.mp4 and bumps manifest.json
 
 The script also makes `<theme id>-1080.mp4`, a 1080p copy the app downloads on a screen narrower than 2560 px (most TVs give apps a 1080p screen, where a 4K video only costs decoding time).
 
